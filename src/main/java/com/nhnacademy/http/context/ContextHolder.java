@@ -16,9 +16,11 @@ package com.nhnacademy.http.context;
 //즉 Context가 web server 내에서 공유 됩니다.
 
 public class ContextHolder {
-    private static final Context context = null;
+    private static final Context context = new ApplicationContext();
+
+    private ContextHolder() {}
 
     public static synchronized ApplicationContext getApplicationContext() {
-        return null;
+        return (ApplicationContext) context;
     }
 }

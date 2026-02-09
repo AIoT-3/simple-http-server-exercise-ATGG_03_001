@@ -42,7 +42,7 @@ public class MethodNotAllowedService implements HttpService{
             bufferedWriter.write(responseHeader);
             bufferedWriter.write(responseBody);
             bufferedWriter.flush();
-            log.debug("body:{}",responseBody.toString());
+            log.debug("body:{}",responseBody);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -31,10 +31,12 @@ public class IndexHttpService implements HttpService{
         String responseBody = null;
 
         try {
-            responseBody = ResponseUtils.tryGetBodyFromFile(httpRequest.getRequestURI());
             //TODO#9 CounterUtils.increaseAndGet()를 이용해서 context에 있는 counter 값을 증가시키고, 반환되는 값을 index.html에 반영 합니다.
             //${count} <-- counter 값을 치환 합니다.
-            responseBody = null;
+            responseBody = ResponseUtils.tryGetBodyFromFile(httpRequest.getRequestURI());
+
+            long count = CounterUtils.increaseAndGet();
+            responseBody = responseBody.replace("${count}", String.valueOf(count));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -47,7 +49,7 @@ public class IndexHttpService implements HttpService{
             bufferedWriter.write(responseHeader);
             bufferedWriter.write(responseBody);
             bufferedWriter.flush();
-            log.debug("body:{}",responseBody.toString());
+            log.debug("body:{}",responseBody);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
