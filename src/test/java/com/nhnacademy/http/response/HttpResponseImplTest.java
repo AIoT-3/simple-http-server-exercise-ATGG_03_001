@@ -36,7 +36,8 @@ class HttpResponseImplTest {
     @DisplayName("Socket is null")
     void constructor(){
         //TODO#106 socket null check, IllegalArgumentException이 발생 하는지 검증 합니다.
-
+        assertThrows(IllegalArgumentException.class,
+                () -> new HttpResponseImpl(null));
     }
 
     @Test
@@ -55,6 +56,6 @@ class HttpResponseImplTest {
     @DisplayName("default Character Encoding : utf-8")
     void getCharacterEncoding() {
         //TODO#107 default getCharacterEncoding()이 'utf-8'인지 검증 합니다.
-
+        assertEquals("utf-8", httpResponse.getCharacterEncoding());
     }
 }

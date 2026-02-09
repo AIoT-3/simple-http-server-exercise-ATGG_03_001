@@ -51,7 +51,7 @@ public class SimpleHttpServer {
         workerThreadPool.start();
 
         try(ServerSocket serverSocket = new ServerSocket(8080);){
-            while(true){
+            while (true){
                 Socket client = serverSocket.accept();
                 
                 //Queue(requestChannel)에 HttpJob 객체를 배치 합니다.

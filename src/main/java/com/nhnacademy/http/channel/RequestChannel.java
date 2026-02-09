@@ -34,7 +34,7 @@ public class RequestChannel {
     }
 
     public synchronized void addHttpJob(Executable executable){
-        while(requestQueue.size() >= QUEUE_MAX_SIZE){
+        while (requestQueue.size() >= QUEUE_MAX_SIZE){
             try {
                 wait();
             } catch (InterruptedException e) {
@@ -46,7 +46,7 @@ public class RequestChannel {
     }
 
     public synchronized Executable getHttpJob(){
-        while(requestQueue.isEmpty()){
+        while (requestQueue.isEmpty()){
             try {
                 wait();
             } catch (InterruptedException e) {
