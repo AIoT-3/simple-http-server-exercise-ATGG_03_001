@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -40,13 +41,18 @@ public class InfoHttpService implements HttpService {
     public void doGet(HttpRequest httpRequest, HttpResponse httpResponse) {
         // body-설정
         String responseBody = null;
+        try {
+            responseBody = ResponseUtils.tryGetBodyFromFile("/info.html");
+        } catch (IOException e) {
+            log.warn("html 파일 읽기 실패: {}", e.getMessage(), e);
+            return;
+        }
 
 
-
-        String id =  null;
-        String name= null;
+        String id = httpRequest.getParameter("id");
+        String name = httpRequest.getParameter("name");
         name = URLDecoder.decode(name, StandardCharsets.UTF_8);
-        String age = null;
+        String age = httpRequest.getParameter("age");
 
         log.debug("id:{}",id);
         log.debug("name:{}",name);
@@ -57,11 +63,16 @@ public class InfoHttpService implements HttpService {
         responseBody = responseBody.replace("${age}",age);
 
         //Header-설정
-        String responseHeader = null;
+        String charset = httpResponse.getCharacterEncoding();
+        int bodyLength = responseBody.getBytes(Charset.forName(charset)).length;
+        String responseHeader = ResponseUtils.createResponseHeader(200, charset, bodyLength);
 
         //PrintWriter를 이용한 응답
-        try(PrintWriter bufferedWriter = null;){
+        try (PrintWriter bufferedWriter = httpResponse.getWriter()) {
+            bufferedWriter.write(responseHeader);
+            bufferedWriter.write(responseBody);
 
+            bufferedWriter.flush();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

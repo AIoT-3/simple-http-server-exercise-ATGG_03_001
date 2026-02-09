@@ -23,7 +23,7 @@ public class HttpResponseImpl implements HttpResponse {
 
     private final Socket socket;
     private final DataOutputStream out;
-    private String charset="UTF-8";
+    private String charset = "UTF-8";
 
     public HttpResponseImpl(Socket socket){
         this.socket = socket;
@@ -36,8 +36,7 @@ public class HttpResponseImpl implements HttpResponse {
 
     @Override
     public PrintWriter getWriter() throws IOException {
-        PrintWriter printWriter =  new PrintWriter(out,false, Charset.forName(getCharacterEncoding()));
-        return printWriter;
+        return new PrintWriter(out, false, Charset.forName(getCharacterEncoding()));
     }
 
     @Override

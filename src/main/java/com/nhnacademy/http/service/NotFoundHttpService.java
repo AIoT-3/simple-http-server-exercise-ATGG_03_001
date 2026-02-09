@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 
 @Slf4j
 public class NotFoundHttpService implements HttpService{
@@ -32,12 +33,24 @@ public class NotFoundHttpService implements HttpService{
         //Body-설정
         String responseBody = null;
 
+        try {
+            responseBody = ResponseUtils.tryGetBodyFromFile("/404.html");
+        } catch (IOException e) {
+            log.warn("html 파일 읽기 실패: {}", e.getMessage(), e);
+            return;
+        }
+
         //Header-설정
-        String responseHeader = null;
+        String charset = httpResponse.getCharacterEncoding();
+        int bodyLength = responseBody.getBytes(Charset.forName(charset)).length;
+        String responseHeader = ResponseUtils.createResponseHeader(404, charset, bodyLength);
 
         //PrintWriter 응답
-        try(PrintWriter bufferedWriter = null;){
+        try(PrintWriter bufferedWriter = httpResponse.getWriter()) {
+            bufferedWriter.write(responseHeader);
+            bufferedWriter.write(responseBody);
 
+            bufferedWriter.flush();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

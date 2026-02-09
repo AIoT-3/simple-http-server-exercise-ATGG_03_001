@@ -68,6 +68,7 @@ class IndexHttpServiceTest {
     @DisplayName("doGet")
     void doGet() {
         Mockito.when(httpRequest.getMethod()).thenReturn("GET");
+        Mockito.when(httpResponse.getCharacterEncoding()).thenReturn("UTF-8");
 
         httpService.service(httpRequest,httpResponse);
         String response = stringWriter.toString();
@@ -75,7 +76,8 @@ class IndexHttpServiceTest {
         log.debug("response:{}",response);
         //TODO#101- response 검증, httpStatuscode: 200, description: OK 검증 합니다.
         Assertions.assertAll(
-
+                () -> assertTrue(response.contains("200")),
+                () -> assertTrue(response.contains("OK"))
         );
     }
 
@@ -85,7 +87,8 @@ class IndexHttpServiceTest {
         //TODO#102- response 검증,  request method = POST, RuntimeException이 발생 합니다.
         Mockito.when(httpRequest.getMethod()).thenReturn("POST");
 
-
+        assertThrows(RuntimeException.class,
+                () -> httpService.service(httpRequest, httpResponse));
     }
 
 }

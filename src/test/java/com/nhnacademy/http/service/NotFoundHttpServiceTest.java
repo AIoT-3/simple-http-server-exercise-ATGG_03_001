@@ -60,6 +60,7 @@ class NotFoundHttpServiceTest {
     @DisplayName("doGet : 404 not found")
     void doGet() {
         Mockito.when(httpRequest.getMethod()).thenReturn("GET");
+        Mockito.when(httpResponse.getCharacterEncoding()).thenReturn("UTF-8");
 
         httpService.service(httpRequest,httpResponse);
         String response = stringWriter.toString();
@@ -68,7 +69,8 @@ class NotFoundHttpServiceTest {
 
         //TODO#105- response 검증, httpStatuscode: 404, description: Not Found 검증 합니다.
         Assertions.assertAll(
-
+                () -> Assertions.assertTrue(response.contains("404")),
+                () -> Assertions.assertTrue(response.contains("Not Found"))
         );
     }
 }

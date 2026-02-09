@@ -62,6 +62,7 @@ class MethodNotAllowedServiceTest {
     @DisplayName("doGet : 405 method not allowed")
     void doGet() {
         Mockito.when(httpRequest.getMethod()).thenReturn("GET");
+        Mockito.when(httpResponse.getCharacterEncoding()).thenReturn("UTF-8");
 
         httpService.service(httpRequest,httpResponse);
         String response = stringWriter.toString();
@@ -71,7 +72,8 @@ class MethodNotAllowedServiceTest {
         //TODO#106- response 검증, httpStatuscode: 405, description: Method Not Allowed 검증 합니다.
 
         Assertions.assertAll(
-
+                () -> Assertions.assertTrue(response.contains("405")),
+                () -> Assertions.assertTrue(response.contains("Method Not Allowed"))
         );
     }
 }
