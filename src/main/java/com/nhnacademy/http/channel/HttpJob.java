@@ -14,10 +14,11 @@ package com.nhnacademy.http.channel;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.net.URL;
-import java.security.cert.CRL;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 @Slf4j
@@ -45,5 +46,40 @@ public class HttpJob implements Executable {
         //<html><body><h1>thread-2:hello java</h1></body>
         //....
 
+        try (client;
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()))) {
+            String responseBody = getResponseBody();
+            String responseHeader = getResponseHeader(responseBody);
+
+            writer.write(responseHeader);
+            writer.write(responseBody);
+
+            writer.flush();
+        } catch (IOException e) {
+            log.warn("IOException 발생: {}", e.getMessage(), e);
+        }
+    }
+
+    private String getResponseHeader(String responseBody) {
+
+        StringBuilder responseHeader = new StringBuilder();
+
+        responseHeader.append(String.format("HTTP/1.0 200 OK%s",CRLF));
+
+        responseHeader.append(String.format("Server: HTTP server/0.1%s",CRLF));
+
+        responseHeader.append(String.format("Content-type: text/html; charset=%s%s","UTF-8",CRLF));
+
+        responseHeader.append(String.format("Connection: close%s",CRLF));
+
+        int bodyLength = responseBody.getBytes(StandardCharsets.UTF_8).length;
+
+        responseHeader.append(String.format("Content-Length:%d%s%s",bodyLength, CRLF,CRLF));
+
+        return responseHeader.toString();
+    }
+
+    private String getResponseBody() {
+        return String.format("<html><body><h1>%s:hello java</h1></body>", Thread.currentThread().getName());
     }
 }
