@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Objects;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 public class SimpleHttpServer {
@@ -27,35 +27,43 @@ public class SimpleHttpServer {
     private final ServerSocket serverSocket;
 
     //TODO#1 CRLF를 선언합니다. CRLF는 Carriage Return (CR) 와 Line Feed (LF)를 의미하며, HTTP 프로토콜에서 줄 바꿈을 나타내기 위해 사용됩니다. 이는 \r\n으로 표현됩니다.
-    private static final String CRLF="FIXME";
+    private static final String CRLF = "\r\n";
 
-    public SimpleHttpServer(){
+    public SimpleHttpServer() {
         //TODO#2 기본 port는 DEFAULT_PORT을 사용합니다.
-        port =0;
-        serverSocket = null;
+        this(DEFAULT_PORT);
     }
 
     public SimpleHttpServer(int port) {
         //TODO#3 port range <=0 IllegalArgumentException 예외가 발생 합니다. 적절한 Error Message를 작성해주세요.
 
-        this.port = 0;
+        if (port <= 0) {
+            throw new IllegalArgumentException("포트번호는 0보다 작을 수 없습니다.");
+        }
+
+        this.port = port;
 
 
         //TODO#4 serverSocket을 초기화 합니다.
-        serverSocket = null;
+        try {
+            serverSocket = new ServerSocket(port);
+        } catch (IOException e) {
+            log.error("ServerSocket 생성 실패: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 
     public void start() throws IOException {
 
-        while(true){
+        while (true) {
 
             try(
                 //TODO#5 client가 연결될 때 까지 대기 합니다.
-                Socket client = null;
+                Socket client = serverSocket.accept();
 
                 //TODO#6 입출력을 위해서  Reader, Writer를 선언 합니다.
-                BufferedReader bufferedReader = null;
-                BufferedWriter bufferedWriter = null;
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
             ) {
 
                 StringBuilder requestBuilder = new StringBuilder();
@@ -63,15 +71,66 @@ public class SimpleHttpServer {
                 while (true) {
                     String line = bufferedReader.readLine();
                     //TODO#7  requestBuilder에 append 합니다.
+                    requestBuilder.append(line);
 
                     log.debug("{}", line);
 
                     //TODO#8 종료 조건 null or size==0
-                    break;
+                    if (line == null || line.isEmpty()) {
+                        break;
+                    }
                 }
                 log.debug("------HTTP-REQUEST_end()");
 
-                //TODO#9 clinet에 응답할 html을 작성합니다.
+                String responseBody = getResponseBody();
+
+                String responseHeader = getResponseHeader(responseBody);
+
+                //TODO#14 write Response Header
+                bufferedWriter.write(responseHeader);
+
+                //TODO#15 write Response Body
+                bufferedWriter.write(responseBody);
+
+                //TODO#16 buffer에 등록된 Response (header, body) flush 합니다.(socket을 통해서 clent에 응답 합니다.)
+                bufferedWriter.flush();
+
+                log.debug("header: {}",responseHeader);
+                log.debug("body: {}", responseBody);
+
+            }catch (IOException e){
+                log.error("socket error : {}",e);
+            }
+        }//end while
+    }//end start
+
+    private static String getResponseHeader(String responseBody) {
+        StringBuilder responseHeaderBuilder = new StringBuilder();
+
+        //TODO#10 HTTP/1.0 200 OK
+        responseHeaderBuilder.append(String.format("HTTP/1.0 200 OK%s", CRLF));
+
+        responseHeaderBuilder.append(String.format("Server: HTTP server/0.1%s", CRLF));
+
+        //TODO#11 Content-type: text/html; charset=UTF-8"
+        responseHeaderBuilder.append(String.format("Content-type: text/html; charset=UTF-8%s", CRLF));
+
+
+        //TODO#12  Connection: close 헤더를 사용하면 해당 요청 후에 연결이 닫히게 된다.
+        responseHeaderBuilder.append(String.format("Connection: close%s", CRLF));
+
+        //TODO#13 responseBody의  Content-Length를 설정 합니다.
+        int responseLength = responseBody.getBytes(StandardCharsets.UTF_8).length;
+        responseHeaderBuilder.append(String.format("Content-Length: %d%s", responseLength, CRLF));
+
+        // 헤더와 바디를 구분하기 위한 기준점
+        responseHeaderBuilder.append(CRLF);
+
+        return responseHeaderBuilder.toString();
+    }
+
+    private String getResponseBody() {
+        //TODO#9 client에 응답할 html을 작성합니다.
                 /*
                     <html>
                         <body>
@@ -79,44 +138,14 @@ public class SimpleHttpServer {
                         </body>
                     </html>
                 */
+        StringBuilder responseBodyBuilder = new StringBuilder();
+        //html tag를 추가하세요.
+        responseBodyBuilder.append("<html>");
+        responseBodyBuilder.append("<body>");
+        responseBodyBuilder.append("<h1>hello java</h1>");
+        responseBodyBuilder.append("</body>");
+        responseBodyBuilder.append("</html>");
 
-                StringBuilder responseBody = new StringBuilder();
-                responseBody.append("<html>");
-                //html tag를 추가하세요.
-                responseBody.append("</html>");
-
-                StringBuilder responseHeader = new StringBuilder();
-
-                //TODO#10 HTTP/1.0 200 OK
-                responseHeader.append("fixme");
-
-                responseHeader.append(String.format("Server: HTTP server/0.1%s",CRLF));
-
-                //TODO#11 Content-type: text/html; charset=UTF-8"
-                responseHeader.append("fixme");
-
-
-                //TODO#12  Connection: close 헤더를 사용하면 해당 요청 후에 연결이 닫히게 된다.
-                responseHeader.append("fixme");
-
-                //TODO#13 responseBody의  Content-Length를 설정 합니다.
-                responseHeader.append("fixme");
-
-                //TODO#14 write Response Header
-                bufferedWriter.write("");
-
-                //TODO#15 write Response Body
-                bufferedWriter.write("");
-
-                //TODO#16 buffer에 등록된 Response (header, body) flush 합니다.(socket을 통해서 clent에 응답 합니다.)
-
-
-                log.debug("header:{}",responseHeader);
-                log.debug("body:{}",responseBody);
-
-            }catch (IOException e){
-                log.error("socket error : {}",e);
-            }
-        }//end while
-    }//end start
+        return responseBodyBuilder.toString();
+    }
 }
