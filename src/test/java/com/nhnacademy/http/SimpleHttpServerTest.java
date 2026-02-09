@@ -26,6 +26,9 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Slf4j
 class SimpleHttpServerTest {
 
@@ -58,7 +61,7 @@ class SimpleHttpServerTest {
         log.debug("response:{}",response.body());
 
         //TODO#100 - response.statusCode() == 200 검증 합니다.
-
+        assertEquals(200, response.statusCode());
     }
 
     @Test
@@ -73,7 +76,8 @@ class SimpleHttpServerTest {
 
         //TODO#101 - response.body() 'hello' or 'java' 문자열이 포함되었는지 검증 합니다.
         Assertions.assertAll(
-
+                () -> assertTrue(response.body().contains("hello")),
+                () -> assertTrue(response.body().contains("java"))
         );
     }
 
@@ -91,8 +95,7 @@ class SimpleHttpServerTest {
         log.debug("contentType:{}",actual);
 
         //TODO#102 contentType이 'text/html' 검증 합니다.
-
-
+        assertTrue(actual.contains("text/html"));
     }
 
     @Test
@@ -109,7 +112,7 @@ class SimpleHttpServerTest {
         log.debug("contentType:{}",actual);
 
         //TODO#103 contentType header의 charset=utf-8 인지 검증 합니다.
-
+        assertTrue(actual.contains("utf-8"));
     }
 
 
@@ -128,7 +131,7 @@ class SimpleHttpServerTest {
         log.debug("Content-Length:{}",actual);
 
         //TODO#104 content-Length 값이 존재 하는지 검증 합니다.
-
+        assertTrue(contentLengthOptional.isPresent());
     }
 
 
@@ -136,5 +139,4 @@ class SimpleHttpServerTest {
     static void tearDown() throws InterruptedException {
        Thread.sleep(1000);
     }
-
 }
