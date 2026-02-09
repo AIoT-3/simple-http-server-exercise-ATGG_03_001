@@ -13,19 +13,16 @@
 package com.nhnacademy.http;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.function.Try;
 import org.junit.platform.commons.util.ReflectionUtils;
 
-import java.lang.reflect.Field;
 import java.net.Socket;
 import java.util.Queue;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 class HttpRequestHandlerQueueTest {
@@ -64,14 +61,16 @@ class HttpRequestHandlerQueueTest {
         log.debug("requestQueue-size:{}",requestQueue.size());
         //TODO#101 - requestQueue.size() 10인지 검증 합니다.
 
-
+        assertEquals(10, requestQueue.size());
     }
 
     @Test
     @DisplayName("getRequest : socket0")
     void getRequest(){
         //TODO#102 httpRequestHandler.getRequest(); 호출 했을 때 socket0 반환되는지 검증 합니다.
+        TestSocket test = (TestSocket) httpRequestHandler.getRequest();
 
+        assertEquals("socket0", test.getName());
     }
 
     @Test
@@ -108,14 +107,15 @@ class HttpRequestHandlerQueueTest {
         consumer.start();
 
         //TODO#103 producer or consumer thread가 실행 중 이라면 대기 합니다. yield()를 이용해서 구현 하세요.
-
+        while (producer.isAlive() || consumer.isAlive()) {
+            Thread.yield();
+        }
 
         Try<Object> readFieldValue = ReflectionUtils.tryToReadFieldValue(HttpRequestHandler.class, "requestQueue", httpRequestHandler);
         Queue<Socket> requestQueue= (Queue<Socket>) readFieldValue.get();
 
         //TODO#104 requestQueue.size()가 10인지 검증 합니다.
 
+        assertEquals(10, requestQueue.size());
     }
-
-
 }

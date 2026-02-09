@@ -23,6 +23,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SimpleHttpServerTest {
@@ -52,7 +54,7 @@ class SimpleHttpServerTest {
         log.debug("response:{}",response.body());
 
         //TODO#105 threadB 문자열이 포함되었는지 검증 합니다.
-
+        assertTrue(response.body().contains("threadB"));
     }
 
     @Test
@@ -68,7 +70,7 @@ class SimpleHttpServerTest {
         log.debug("response:{}",response.body());
 
         //TODO#106 threadA 문자열이 포함되었는지 검증 합니다.
-
+        assertTrue(response.body().contains("threadA"));
     }
 
     @Test
@@ -76,7 +78,14 @@ class SimpleHttpServerTest {
     @DisplayName("status code : 200 ok")
     void request1() throws URISyntaxException, IOException, InterruptedException {
         //TODO#107 response.statusCode()인지 검증 합니다.
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(String.format("http://localhost:%d",TEST_PORT)))
+                .build();
 
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(200, response.statusCode());
     }
 
     @Test
@@ -84,7 +93,14 @@ class SimpleHttpServerTest {
     @DisplayName("response: hello java")
     void request2() throws URISyntaxException, IOException, InterruptedException {
         //TODO#108 response.body()에 'hello' or 'java' 문자열이 포함되는지 검증 합니다.
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(String.format("http://localhost:%d",TEST_PORT)))
+                .build();
 
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertTrue(response.body().contains("hello") || response.body().contains("java"));
     }
 
     @Test
@@ -92,7 +108,19 @@ class SimpleHttpServerTest {
     @DisplayName("content-type")
     void request3() throws URISyntaxException, IOException, InterruptedException {
         //TODO#109 Content-Type header가 text/html 인지 검증 합니다.
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(String.format("http://localhost:%d",TEST_PORT)))
+                .build();
 
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        Optional<String> contentType = response.headers().firstValue("Content-Type");
+
+        assertAll(
+                () -> assertTrue(contentType.isPresent()),
+                () -> assertTrue(contentType.get().contains("text/html"))
+        );
     }
 
     @Test
@@ -100,12 +128,23 @@ class SimpleHttpServerTest {
     @DisplayName("charset utf-8")
     void request4() throws URISyntaxException, IOException, InterruptedException {
         //TODO#110 charset이 utf-8인지 검증 합니다.
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(String.format("http://localhost:%d",TEST_PORT)))
+                .build();
 
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        Optional<String> contentType = response.headers().firstValue("Content-Type");
+
+        assertAll(
+                () -> assertTrue(contentType.isPresent()),
+                () -> assertTrue(contentType.get().contains("UTF-8"))
+        );
     }
 
     @AfterAll
     static void tearDown() throws InterruptedException {
        Thread.sleep(1000);
     }
-
 }
