@@ -78,19 +78,12 @@ public class ResponseUtils {
      * @throws IOException
      */
     public static String tryGetBodyFromFile(String filePath) throws IOException {
-        /*  tryGetBodyFromFile 구현 합니다.
-         * ex) filePath = /index.html -> /resources/index.html 파일을 읽어서 반환 합니다.
-         * */
-
         StringBuilder responseBody = new StringBuilder();
         try(InputStream inputStream = ResponseUtils.class.getResourceAsStream(filePath);
             BufferedReader reader =  new BufferedReader(new InputStreamReader(inputStream,"UTF-8"))){
-            while(true) {
-                String line = reader.readLine();
-                if(Objects.isNull(line)){
-                    break;
-                }
-                responseBody.append(line);
+            String line;
+            while((line = reader.readLine()) != null) {
+                responseBody.append(line).append(CRLF);
             }
         }
         return responseBody.toString();
@@ -104,32 +97,20 @@ public class ResponseUtils {
      * @return responseHeader를 String 반환
      */
     public static String createResponseHeader(int httpStatusCode, String charset, int contentLength ){
-        /* responseHeader를 생성 합니다. 아래 header 예시를 참고
-
-            - 200 OK
-            HTTP/1.0 200 OK
-            Server: HTTP server/0.1
-            Content-type: text/html; charset=UTF-8
-            Connection: Closed
-            Content-Length:143
-
-            - 404 Not Found
-            HTTP/1.0 404 Not Found
-            Server: HTTP server/0.1
-            Content-type: text/html; charset=UTF-8
-            Connection: Closed
-            Content-Length:143
-
-            - HttpStatusCode는 HttpStatus enum을 참고하여 구현 합니다.
-        */
-
         StringBuilder responseHeader = new StringBuilder();
-        responseHeader.append(String.format("HTTP/1.0 %d %s%s", httpStatusCode, HttpStatus.getStatusFromCode(httpStatusCode).getDesription(),CRLF));
-        responseHeader.append(String.format("Server: HTTP server/0.1%s",CRLF));
-        responseHeader.append(String.format("Content-type: text/html; charset=%s%s",charset,CRLF));
-        responseHeader.append(String.format("Connection: Closed%s", CRLF));
-        responseHeader.append(String.format("Content-Length:%d %s%s",contentLength,System.lineSeparator(),CRLF));
+        responseHeader.append(String.format("HTTP/1.0 %d %s%s", httpStatusCode, HttpStatus.getStatusFromCode(httpStatusCode).getDesription(), CRLF));
+        responseHeader.append(String.format("Server: HTTP server/0.1%s", CRLF));
+        responseHeader.append(String.format("Content-type: text/html; charset=%s%s", charset, CRLF));
+        responseHeader.append(String.format("Connection: close%s", CRLF));
+        responseHeader.append(String.format("Content-Length: %d%s%s", contentLength, CRLF, CRLF));
         return responseHeader.toString();
     }
 
+    public static String createRedirectHeader(String charset, String location) {
+        StringBuilder responseHeader = new StringBuilder();
+        responseHeader.append(String.format("HTTP/1.1 301 Moved Permanently%s", CRLF));
+        responseHeader.append(String.format("Location: %s%s", location, CRLF));
+        responseHeader.append(String.format("Content-type: text/html; charset=%s%s%s", charset, CRLF, CRLF));
+        return responseHeader.toString();
+    }
 }

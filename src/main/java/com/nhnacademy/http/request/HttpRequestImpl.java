@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -42,17 +44,33 @@ public class HttpRequestImpl implements HttpRequest {
         try{
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-            while (true) {
-                String line = bufferedReader.readLine();
-                log.debug("line:{}", line);
+            String firstLine = bufferedReader.readLine();
+            if (Objects.isNull(firstLine) || firstLine.isEmpty()) {
+                return;
+            }
+            log.debug("firstLine:{}", firstLine);
+            parseHttpRequestInfo(firstLine);
 
-                if (isFirstLine(line)) {
-                    parseHttpRequestInfo(line);
-                }else if (isEndLine(line)){
-                    break;
-                }else{
-                    parseHeader(line);
+            String line;
+            while ((line = bufferedReader.readLine()) != null && !line.isEmpty()) {
+                log.debug("header line:{}", line);
+                parseHeader(line);
+            }
+
+            //body 파싱
+            String contentLengthStr = (String) headerMap.get("Content-Length");
+            if (Objects.nonNull(contentLengthStr)) {
+                int contentLength = Integer.parseInt(contentLengthStr);
+                char[] buffer = new char[contentLength];
+                int readCount = 0;
+                while (readCount < contentLength) {
+                    int count = bufferedReader.read(buffer, readCount, contentLength - readCount);
+                    if (count == -1) break;
+                    readCount += count;
                 }
+                String body = new String(buffer, 0, readCount);
+                log.debug("body:{}", body);
+                parseBody(body);
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -65,12 +83,17 @@ public class HttpRequestImpl implements HttpRequest {
     }
     @Override
     public String getParameter(String name) {
-        return String.valueOf(getParameterMap().get(name));
+        return getParameterMap().get(name);
     }
 
     @Override
     public Map<String, String> getParameterMap() {
-        return (Map<String, String>) headerMap.get(KEY_QUERY_PARAM_MAP);
+        Map<String, String> queryMap = (Map<String, String>) headerMap.get(KEY_QUERY_PARAM_MAP);
+        if (Objects.isNull(queryMap)) {
+            queryMap = new HashMap<>();
+            headerMap.put(KEY_QUERY_PARAM_MAP, queryMap);
+        }
+        return queryMap;
     }
 
     @Override
@@ -90,27 +113,28 @@ public class HttpRequestImpl implements HttpRequest {
         return String.valueOf(headerMap.get(KEY_REQUEST_PATH));
     }
 
-    private boolean isFirstLine(String line){
-        if(Objects.isNull(line)){
-            return false;
-        }
-        if( line.toUpperCase().indexOf("GET") > -1 || line.toUpperCase().indexOf("POST") > -1 ){
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isEndLine(String s){
-        return Objects.isNull(s) || s.equals("") ? true : false;
-    }
-
     private void parseHeader(String s){
-        String[] hStr = s.split(HEADER_DELIMER);
-        String key = hStr[0].trim();
-        String value = hStr[1].trim();
+        int index = s.indexOf(HEADER_DELIMER);
+        if (index == -1) return;
 
-        if(Objects.nonNull(key) && key.length()>0) {
+        String key = s.substring(0, index).trim();
+        String value = s.substring(index + 1).trim();
+
+        if(!key.isEmpty()) {
             headerMap.put(key, value);
+
+            if (value.contains(";")) {
+                String[] parts = value.split(";");
+                for (int i = 1; i < parts.length; i++) {
+                    String part = parts[i].trim();
+                    if (part.contains("=")) {
+                        String[] kv = part.split("=");
+                        if (kv.length == 2) {
+                            headerMap.put(kv[0].trim(), kv[1].trim());
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -118,30 +142,30 @@ public class HttpRequestImpl implements HttpRequest {
         String arr[] = s.split(" ");
         //http method parse
         if (arr.length > 0) {
-            headerMap.put(KEY_HTTP_METHOD, s.split(" ")[0]);
+            headerMap.put(KEY_HTTP_METHOD, arr[0]);
         }
         //query parameter parse
-        if (arr.length > 2) {
+        if (arr.length > 1) {
             Map<String, String> queryMap = new HashMap<>();
-            int questionIndex = arr[1].indexOf("?");
+            String fullPath = arr[1];
+            int questionIndex = fullPath.indexOf("?");
             String httpRequestPath;
 
-            if(questionIndex>0){
-                httpRequestPath = arr[1].substring(0, questionIndex);
-            }else{
-                httpRequestPath = arr[1];
-            }
-
-            String queryString = arr[1].substring(questionIndex + 1, arr[1].length());
-
-            if (Objects.nonNull(queryString) && !httpRequestPath.equals(queryString) ) {
-                String qarr[] = queryString.split("&");
-                for (String q : qarr) {
-                    String key = q.split("=")[0];
-                    String value = q.split("=")[1];
-                    log.debug("key:{},value={}", key, value);
-                    queryMap.put(key.trim(), value.trim());
+            if(questionIndex >= 0){
+                httpRequestPath = fullPath.substring(0, questionIndex);
+                String queryString = fullPath.substring(questionIndex + 1);
+                if (!queryString.isEmpty()) {
+                    String qarr[] = queryString.split("&");
+                    for (String q : qarr) {
+                        String[] kv = q.split("=");
+                        if (kv.length == 2) {
+                            queryMap.put(URLDecoder.decode(kv[kv.length-2].trim(), StandardCharsets.UTF_8),
+                                    URLDecoder.decode(kv[kv.length-1].trim(), StandardCharsets.UTF_8));
+                        }
+                    }
                 }
+            }else{
+                httpRequestPath = fullPath;
             }
 
             //path 설정
@@ -152,4 +176,21 @@ public class HttpRequestImpl implements HttpRequest {
         }
     }
 
+    private void parseBody(String body) {
+        if (Objects.isNull(body) || body.isEmpty()) {
+            return;
+        }
+
+        Map<String, String> queryMap = getParameterMap();
+
+        String[] params = body.split("&");
+        for (String param : params) {
+            String[] keyValue = param.split("=");
+            if (keyValue.length == 2) {
+                String key = URLDecoder.decode(keyValue[0].trim(), StandardCharsets.UTF_8);
+                String value = URLDecoder.decode(keyValue[1].trim(), StandardCharsets.UTF_8);
+                queryMap.put(key, value);
+            }
+        }
+    }
 }

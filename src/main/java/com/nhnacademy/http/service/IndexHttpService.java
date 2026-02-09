@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 
 @Slf4j
 public class IndexHttpService implements HttpService{
@@ -37,12 +38,20 @@ public class IndexHttpService implements HttpService{
 
             long count = CounterUtils.increaseAndGet();
             responseBody = responseBody.replace("${count}", String.valueOf(count));
+
+            String userId = httpRequest.getParameter("userId");
+
+            if (userId != null && !userId.isEmpty()) {
+                responseBody = responseBody.replace("</body>", String.format("<h1>%s님 회원가입 되었습니다</h1></body>", userId));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         //Header-설정
-        String responseHeader = ResponseUtils.createResponseHeader(200,"UTF-8",responseBody.length());
+        String charset = httpResponse.getCharacterEncoding();
+        int bodyLength = responseBody.getBytes(Charset.forName(charset)).length;
+        String responseHeader = ResponseUtils.createResponseHeader(200, charset, bodyLength);
 
         //PrintWriter 응답
         try(PrintWriter bufferedWriter = httpResponse.getWriter();){

@@ -32,7 +32,7 @@ public class HttpResponseImpl implements HttpResponse {
         }
         this.socket = socket;
         try {
-            this.out =  new DataOutputStream (socket.getOutputStream());
+            this.out =  new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -40,7 +40,7 @@ public class HttpResponseImpl implements HttpResponse {
 
     @Override
     public PrintWriter getWriter() throws IOException {
-        PrintWriter printWriter =  new PrintWriter(out,false, Charset.forName(getCharacterEncoding()));
+        PrintWriter printWriter = new PrintWriter(out,false, Charset.forName(getCharacterEncoding()));
         return printWriter;
     }
 
